@@ -1,23 +1,33 @@
 import langchain
-from chromadb import ChromaDB
+from whoosh import index, fields, qparser
+from whoosh.index import create_in
+from whoosh.qparser import QueryParser
 import openai
+import os
 
 def index_text_files(directory):
-    chromadb = ChromaDB()
+    schema = fields.Schema(content=fields.TEXT(stored=True))
+    if not os.path.exists("index"):
+        os.mkdir("index")
+    ix = create_in("index", schema)
+    writer = ix.writer()
     for filename in os.listdir(directory):
         if filename.endswith('.txt'):
             file_path = os.path.join(directory, filename)
             with open(file_path, 'r') as file:
                 text = file.read()
-                chromadb.insert(text)
-    return chromadb
+                writer.add_document(content=text)
+    writer.commit()
+    return ix
+
+def search_text(index, prompt):
+    with index.searcher() as searcher:
+        query = QueryParser("content", index.schema).parse(prompt)
+        results = searcher.search(query)
+        return results
 
 def get_user_prompt():
     return input("Enter your prompt: ")
-
-def search_text(chromadb, prompt):
-    results = chromadb.search(prompt)
-    return results
 
 def generate_response(prompt):
     # Replace 'YOUR_OPENAI_API_KEY' with your actual OpenAI API key
