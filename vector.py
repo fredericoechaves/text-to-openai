@@ -17,13 +17,15 @@ def embed_text_files(directory):
             file_path = os.path.join(directory, filename)
             with open(file_path, 'r') as file:
                 text = file.read()
-                chroma.add_documents(text, )                
+                ids = chroma.add_texts([text], ids=[filename], metadatas=[{'name': filename}])
+                print(ids)
     chroma.persist()
 
 def get_user_prompt():
     return input("Enter your prompt: ")
 
 def main():
+    embed_text_files(directory)
     retriever = chroma.as_retriever(search_kwargs={"k": 3})
     retriever.search_kwargs
     while True:
@@ -37,10 +39,7 @@ def main():
         response = qa_chain(prompt)
         print(response['result'])
         for result in response["source_documents"]:
-            document_id = result["id"]
-            document_name = result["name"]
-            similarity_score = result["score"]
-            print(f"Document ID: {document_id}, Name: {document_name}, Score: {similarity_score}")
+            print(result.metadata)
 
 if __name__ == '__main__':
     main()
